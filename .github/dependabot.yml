@@ -1,0 +1,13 @@
+# Grouped dependency updates (BlackBuck convention).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      time: "04:00"
+      timezone: "Asia/Kolkata"
+    groups:
+      all-non-major:
+        update-types: ["minor", "patch"]
+    open-pull-requests-limit: 5

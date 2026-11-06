@@ -14,6 +14,8 @@ Hosts the approved Android release APK for direct download and the app’s updat
 
 ## Recent changes
 
+- 2026-11-06: Applied repository convention audit fixes to documentation and repository configuration.
+
 - 2026-11-06: Applied the BlackBuck repository convention to documentation and repository hygiene; application behavior is unchanged.
 
 ## Pending / known issues
@@ -26,7 +28,7 @@ No application dependencies or build step. Clone the repository to maintain docu
 
 ## Credentials
 
-No environment-based configuration or credentials are read by this repository. No `.env.example` is required. Provider account access remains outside Git.
+No configuration is required. No environment-based configuration or credentials are read by this repository. No `.env.example` is required. Provider account access remains outside Git.
 
 ## Deploy
 
