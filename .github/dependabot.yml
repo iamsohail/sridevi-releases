@@ -1,13 +1,19 @@
-# Grouped dependency updates (BlackBuck convention).
+# BlackBuck convention: one grouped PR per ecosystem per run, at most one open at a time
+# (owner 2026-11-06: Dependabot was flooding the mailbox). Security updates still arrive as needed.
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-      time: "04:00"
-      timezone: "Asia/Kolkata"
-    groups:
-      all-non-major:
-        update-types: ["minor", "patch"]
-    open-pull-requests-limit: 5
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: monthly
+    time: "04:00"
+    timezone: Asia/Kolkata
+  groups:
+    all-updates:
+      patterns:
+      - '*'
+      update-types:
+      - major
+      - minor
+      - patch
+  open-pull-requests-limit: 1
