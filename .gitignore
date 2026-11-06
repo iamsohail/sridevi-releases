@@ -1,0 +1,27 @@
+
+
+# BlackBuck shared repository hygiene
+.DS_Store
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.vercel/
+*.pem
+*.p8
+*.keystore
+*.jks
+GoogleService-Info.plist
+google-services.json
+*service-account*.json
+DerivedData/
+*.xcuserstate
+xcuserdata/
+__pycache__/
+.venv/
+SESSION_NOTES*.md
