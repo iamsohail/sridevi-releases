@@ -1,0 +1,91 @@
+name: CI
+# Light integrity check for the static APK download site (owner 2026-11-07).
+# GitHub Pages publishes main by itself (legacy "deploy from branch"); this workflow never deploys.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    # unmeasured: remeasure after ten runs
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: JSON parses, HTML local links exist, nothing tracked over 100 MB
+        shell: python3 {0}
+        run: |
+          import json, os, subprocess, sys
+          from html.parser import HTMLParser
+          from urllib.parse import unquote, urlsplit
+
+          files = subprocess.run(["git", "ls-files", "-z"], capture_output=True, text=True, check=True).stdout.split("\0")
+          files = [f for f in files if f]
+          errors = []
+
+          for f in files:
+              size = os.path.getsize(f)
+              if size > 100 * 1024 * 1024:
+                  errors.append(f"{f}: {size / 1048576:.1f} MB is over the 100 MB limit")
+
+          jsons = [f for f in files if f.lower().endswith(".json")]
+          for f in jsons:
+              try:
+                  with open(f, encoding="utf-8") as fh:
+                      json.load(fh)
+              except Exception as exc:
+                  errors.append(f"{f}: invalid JSON ({exc})")
+
+          class Refs(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.refs = []
+              def handle_starttag(self, tag, attrs):
+                  for name, value in attrs:
+                      if name in ("href", "src", "poster", "data") and value:
+                          self.refs.append(value.strip())
+                      elif name == "srcset" and value:
+                          self.refs += [part.strip().split()[0] for part in value.split(",") if part.strip()]
+
+          htmls = [f for f in files if f.lower().endswith((".html", ".htm"))]
+          checked = 0
+          for f in htmls:
+              parser = Refs()
+              with open(f, encoding="utf-8") as fh:
+                  parser.feed(fh.read())
+              for ref in parser.refs:
+                  parts = urlsplit(ref)
+                  if parts.scheme or ref.startswith(("//", "#")) or not parts.path:
+                      continue  # external, in-page or query-only
+                  path = unquote(parts.path)
+                  target = path.lstrip("/") if path.startswith("/") else os.path.normpath(os.path.join(os.path.dirname(f), path))
+                  if target.endswith("/") or os.path.isdir(target):
+                      target = os.path.join(target, "index.html")
+                  checked += 1
+                  if not os.path.exists(target):
+                      errors.append(f"{f}: local link '{ref}' points at missing {target}")
+
+          print(f"{len(files)} tracked files, {len(jsons)} JSON, {len(htmls)} HTML, {checked} local links checked")
+          for e in errors:
+              print(f"::error::{e}")
+          sys.exit(1 if errors else 0)
+
+  ci:     # the ONLY required status check
+    if: always()
+    needs: [validate]
+    runs-on: ubuntu-latest
+    # unmeasured: remeasure after ten runs
+    timeout-minutes: 60
+    steps:
+      - name: Fail if any needed job failed or was cancelled
+        run: |
+          echo '${{ toJSON(needs) }}' | python3 -c "import json,sys; bad=[k for k,v in json.load(sys.stdin).items() if v['result'] in ('failure','cancelled')]; print('failed:',bad) if bad else print('all passed or skipped'); sys.exit(1 if bad else 0)"
