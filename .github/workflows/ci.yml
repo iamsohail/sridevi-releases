@@ -33,7 +33,8 @@ jobs:
           base="${{ github.event.pull_request.base.sha }}"
           # A failed diff fails the step (fail closed); grep -c reads all input, so no SIGPIPE under pipefail.
           files=$(git diff --name-only "$base"...HEAD)
-          if [ "$(printf '%s\n' "$files" | grep -cvE '(\.md$|^docs/)|^$' || true)" -gt 0 ]; then
+          n=$(printf '%s\n' "$files" | grep -cvE '(\.md$|^docs/)|^$') || [ $? -eq 1 ]   # 1 = no code files; 2 = grep error fails the step
+          if [ "$n" -gt 0 ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
