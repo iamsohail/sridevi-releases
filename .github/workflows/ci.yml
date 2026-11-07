@@ -15,7 +15,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        name: Did anything other than docs change?
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; exit 0   # main always validates (Pages publishes main)
+          fi
+          base="${{ github.event.pull_request.base.sha }}"
+          # A failed diff fails the step (fail closed); grep -c reads all input, so no SIGPIPE under pipefail.
+          files=$(git diff --name-only "$base"...HEAD)
+          n=$(printf '%s\n' "$files" | grep -cvE '(\.md$|^docs/)|^$') || [ $? -eq 1 ]   # 1 = no code files; 2 = grep error fails the step
+          if [ "$n" -gt 0 ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   validate:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     # unmeasured: remeasure after ten runs
     timeout-minutes: 60
@@ -81,11 +108,13 @@ jobs:
 
   ci:     # the ONLY required status check
     if: always()
-    needs: [validate]
+    needs: [changes, validate]
     runs-on: ubuntu-latest
     # unmeasured: remeasure after ten runs
     timeout-minutes: 60
     steps:
       - name: Fail if any needed job failed or was cancelled
+        env:
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          echo '${{ toJSON(needs) }}' | python3 -c "import json,sys; bad=[k for k,v in json.load(sys.stdin).items() if v['result'] in ('failure','cancelled')]; print('failed:',bad) if bad else print('all passed or skipped'); sys.exit(1 if bad else 0)"
+          echo "$NEEDS" | python3 -c "import json,sys; bad=[k for k,v in json.load(sys.stdin).items() if v['result'] in ('failure','cancelled')]; print('failed:',bad) if bad else print('all passed or skipped'); sys.exit(1 if bad else 0)"
