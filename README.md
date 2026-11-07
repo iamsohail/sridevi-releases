@@ -14,13 +14,15 @@ Hosts the approved Android release APK for direct download and the app’s updat
 
 ## Recent changes
 
+- 2026-11-07: Convention cross-review fixes: added a light `ci` check (JSON parses, HTML local links exist, nothing tracked over 100 MB; owner decision 2026-11-07), which also gives the monthly github-actions Dependabot entry a workflow to update; Pending says no issues are recorded.
+
 - 2026-11-06: Applied repository convention audit fixes to documentation and repository configuration.
 
 - 2026-11-06: Applied the BlackBuck repository convention to documentation and repository hygiene; application behavior is unchanged.
 
 ## Pending / known issues
 
-No additional issues are recorded in the existing README; this documentation update does not establish production readiness.
+No known issues recorded as of 2026-11-07.
 
 ## Setup
 
@@ -28,11 +30,11 @@ No application dependencies or build step. Clone the repository to maintain docu
 
 ## Credentials
 
-No configuration is required. No environment-based configuration or credentials are read by this repository. No `.env.example` is required. Provider account access remains outside Git.
+No configuration or credentials are read by this repository, so there is no `.env.example`. GitHub account access stays outside Git.
 
 ## Deploy
 
-GitHub Pages serves the Android APK at https://iamsohail.github.io/sridevi-releases/app-release.apk. The Android release procedure publishes the approved APK here; this repository is a static download site with no CI. Published files are unchanged by repository hygiene updates.
+GitHub Pages serves the Android APK at https://iamsohail.github.io/sridevi-releases/app-release.apk. The Android release procedure publishes the approved APK here; this repository is a static download site. CI (`.github/workflows/ci.yml`) only checks integrity and never deploys; Pages publishes `main` by itself. Published files are unchanged by repository hygiene updates.
 
 ## Owner
 
